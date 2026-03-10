@@ -1,0 +1,24 @@
+modelo:
+  a: -1.0
+  b: 1.0
+  mu: 0.0
+  gamma: 1.0
+
+simulacion:
+  dt: 0.001
+  T: 10.0
+  n_trials: 100
+  seed: 42
+
+schumann:
+  f_schumann: 7.83
+  A_schumann: 0.5
+  phi: 0.0
+
+acoplamiento:
+  eta: 0.5
+  tau_water: 0.1
+
+ruido:
+  sigma: 0.3
+  kT: 0.1
