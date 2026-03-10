@@ -4,7 +4,7 @@
 
 **Estado**: 🧪 En desarrollo teórico  
 **Licencia**: [MIT](LICENSE)  
-**Autor**: Enrique chacon Pinzon  
+**Autor**: Enrique Chacon Pinzon  
 **Fecha**: 2026
 
 ---
