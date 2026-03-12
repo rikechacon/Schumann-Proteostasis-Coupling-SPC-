@@ -85,3 +85,91 @@ class SchumannProteostasisModel:
         res1 = minimize_scalar(self.potential, bounds=(-2, 0), method='bounded')
         res2 = minimize_scalar(self.potential, bounds=(0, 2), method='bounded')
         return res1.x, res2.x
+
+
+    def schumann_field_filtered(self, t, tau_filter=0.02):
+        """
+        Campo de Schumann con filtro biológico de primer orden.
+        
+        Modela la respuesta frecuencial del agua vicinal/membrana.
+        tau_filter: tiempo de relajación típico (~20 ms para membranas)
+        """
+        omega = 2 * np.pi * self.f_SR
+        # Ganancia del filtro paso-bajo: máxima en bajas frecuencias
+        gain = 1 / np.sqrt(1 + (omega * tau_filter)**2)
+        # Desfase asociado
+        phase_shift = -np.arctan(omega * tau_filter)
+        
+        return self.A_SR * gain * np.sin(2 * np.pi * self.f_SR * t + self.phi + phase_shift)
+
+
+    def schumann_field_filtered(self, t, tau_filter=0.02):
+        """
+        Campo de Schumann con filtro biológico de primer orden.
+        
+        Modela la respuesta frecuencial del agua vicinal/membrana.
+        tau_filter: tiempo de relajación típico (~20 ms para membranas)
+        
+        El filtro paso-bajo atenúa frecuencias altas, creando
+        especificidad para frecuencias bajas (theta/alpha).
+        """
+        omega = 2 * np.pi * self.f_SR
+        # Ganancia del filtro paso-bajo: máxima en bajas frecuencias
+        gain = 1 / np.sqrt(1 + (omega * tau_filter)**2)
+        # Desfase asociado al filtro
+        phase_shift = -np.arctan(omega * tau_filter)
+        
+        return self.A_SR * gain * np.sin(2 * np.pi * self.f_SR * t + self.phi + phase_shift)
+
+
+    def resonant_coupling_term(self, t, f_neural=8.0, Q_factor=3.0):
+        """
+        Término de acoplamiento con resonancia frecuencial.
+        
+        Modela la interacción entre campo externo y oscilaciones neuronales
+        intrínsecas mediante un factor de calidad Lorentziano.
+        
+        Parámetros:
+        -----------
+        f_neural : float
+            Frecuencia de oscilación neuronal intrínseca (Hz)
+            - Theta: 4-8 Hz
+            - Alpha: 8-12 Hz
+            - Beta: 12-30 Hz
+        Q_factor : float
+            Factor de calidad de la resonancia (anchura del pico)
+            - Q=1: resonancia ancha (poco selectiva)
+            - Q=3: resonancia moderada (balance)
+            - Q=10: resonancia estrecha (muy selectiva)
+        
+        Retorna:
+        --------
+        F_resonant : float
+            Amplitud del acoplamiento modulado por resonancia
+        """
+        # Factor de resonancia Lorentziano
+        # Máximo cuando f_SR == f_neural
+        detuning = self.f_SR - f_neural
+        bandwidth = f_neural / Q_factor
+        resonance_factor = 1.0 / (1.0 + (detuning / bandwidth)**2)
+        
+        # Campo base
+        F_base = self.schumann_field(t)
+        
+        # Acoplamiento resonante
+        F_resonant = self.eta * resonance_factor * F_base
+        
+        return F_resonant, resonance_factor
+
+
+    def drift_term_resonant(self, x, t, f_neural=8.0, Q_factor=3.0):
+        """
+        Término de deriva con acoplamiento resonante.
+        Reemplaza drift_term cuando se usa resonancia.
+        """
+        dV_dx = self.potential_derivative(x)
+        
+        # Obtener acoplamiento resonante y factor de resonancia
+        F_resonant, _ = self.resonant_coupling_term(t, f_neural, Q_factor)
+        
+        return (-dV_dx + F_resonant) / self.gamma
